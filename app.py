@@ -131,3 +131,14 @@ if uploaded_file and api_key:
                             st.subheader("📝 修正リスト")
                             # JSONを表形式で表示
                             st.table(data)
+                            
+                    except json.JSONDecodeError:
+                        st.error("AIからの応答を解析できませんでした（JSON形式エラー）。もう一度試してください。")
+                        st.write("Raw Output:", response_text)
+
+                except Exception as e:
+                    st.error("エラーが発生しました。")
+                    st.error(e)
+
+elif not api_key:
+    st.info("👈 左側のサイドバーにAPIキーを入力してください。")
