@@ -8,69 +8,53 @@ import pandas as pd
 # ページ設定
 st.set_page_config(page_title="【社内用】AI校正＆薬機法チェッカー", layout="wide")
 
-# ■■■ セキュリティ設定（ここを変更してください） ■■■
-# ログインに必要なパスワード
-LOGIN_PASSWORD = "Ma9logi#1117"
+# ■■■ セキュリティ設定 ■■■
+LOGIN_PASSWORD = "secret123"  # 社内共有の合言葉
 
-# ■■■ パスワード認証機能 ■■■
-def check_password():
-    """パスワード認証を行う関数"""
-    # セッションステートの初期化
-    if "password_correct" not in st.session_state:
-        st.session_state.password_correct = False
+# ■■■ セッション状態の初期化 ■■■
+if "password_correct" not in st.session_state:
+    st.session_state.password_correct = False
 
-    # 認証済みならTrueを返してメイン処理へ
-    if st.session_state.password_correct:
-        return True
-
-    # まだ認証していない場合は入力画面を表示
-    st.markdown("### 🔒 アクセス制限")
-    st.markdown("このアプリを使用するにはパスワードが必要です。")
-    st.text_input(
-        "パスワードを入力してください", 
-        type="password", 
-        key="password_input", 
-        on_change=verify_password
-    )
-    return False
-
-def verify_password():
-    """入力されたパスワードを照合"""
-    if st.session_state["password_input"] == LOGIN_PASSWORD:
-        st.session_state.password_correct = True
-        # 安全のため入力されたパスワードをメモリから消去
-        del st.session_state["password_input"]
-    else:
-        st.session_state.password_correct = False
-        st.error("❌ パスワードが違います")
-
-# メイン処理の前に認証チェックを実行
-# 認証が通らない限り、ここから下のコードは実行されません（st.stop）
-if not check_password():
-    st.stop()
+# ■■■ ログイン画面の処理 ■■■
+if not st.session_state.password_correct:
+    # ログインしていない時は、ここだけを表示してストップする
+    st.markdown("### 🔒 社内ログイン")
+    password_input = st.text_input("パスワードを入力してください", type="password", key="login_pass")
+    
+    if password_input:
+        if password_input == LOGIN_PASSWORD:
+            st.session_state.password_correct = True
+            st.rerun()  # 画面をリロードしてメイン画面へ切り替え
+        else:
+            st.error("❌ パスワードが違います")
+    
+    st.stop()  # ここで処理を止める（これより下のコードは読まれない）
 
 
 # ==========================================
-#  ここから下がメインアプリのコードです
+#  ここから下は「ログイン成功後」にしか表示されません
+#  （ログイン欄は消滅しているため、ブラウザの干渉が起きません）
 # ==========================================
 
 st.title("📝 AI校正・薬機法チェックアプリ")
 
-# ガイド（認証通過後に表示される）
+# ガイド
 with st.expander("🔰 初めての方へ：使い方の流れ", expanded=True):
     st.markdown("""
-    1. **APIキー設定**: 左側のサイドバーにGeminiのAPIキーを入力します。
-    2. **画像アップロード**: チェックしたい画像（広告バナーやチラシ）をアップロードします。
-    3. **ルール追加（任意）**: 「『子供』は『お子様』に統一」などの独自ルールがあればサイドバーに入力します。
-    4. **チェック開始**: ボタンを押すとAIが解析を開始します。
+    1. **APIキー設定**: 左側のサイドバーにご自身のAPIキーを入力してください。
+    2. **画像アップロード**: チェックしたい画像をアップロードします。
+    3. **チェック開始**: ボタンを押すとAIが解析を開始します。
     """)
 
 # サイドバー
 with st.sidebar:
-    st.header("⚙️ 設定")
+    st.header("⚙️ 個別設定")
     
-    # APIキー入力
-    api_key = st.text_input("Gemini API Key", key="gemini_api_key", type="password")
+    st.info("💡 APIキーは各自のものを入力してください")
+    
+    # ★ポイント：ログイン欄が消えた後なので、ブラウザはこの欄を別物として認識しやすい
+    api_key = st.text_input("Gemini API Key", key="user_api_key", type="password")
+    
     if not api_key:
         st.warning("⚠️ APIキーを入力してください")
         st.markdown("[APIキーの取得はこちら](https://aistudio.google.com/app/apikey)")
@@ -83,9 +67,14 @@ with st.sidebar:
     st.subheader("追加指示")
     additional_rules = st.text_area(
         "カスタムルール（任意）", 
-        placeholder="例：\n・「致します」は「いたします」に統一\n・断定的な表現は避ける",
+        placeholder="例：\n・「致します」は「いたします」に統一",
         height=100
     )
+    
+    # ログアウトボタン（必要なら）
+    if st.button("ログアウト"):
+        st.session_state.password_correct = False
+        st.rerun()
 
 # モデル選択ロジック
 def get_best_model(api_key):
@@ -137,7 +126,7 @@ if uploaded_file and api_key:
         target_model_name = get_best_model(api_key)
         
         if not target_model_name:
-            st.error("モデルが見つかりませんでした。通信環境を確認してください。")
+            st.error("モデルが見つかりませんでした。APIキーが正しいか確認してください。")
         else:
             with st.spinner(f'AI({target_model_name}) が画像を解析中... ☕'):
                 try:
@@ -216,10 +205,11 @@ if uploaded_file and api_key:
                                 st.info("指摘事項は見つかりませんでした。")
 
                     except json.JSONDecodeError:
-                        st.error("AIの応答解析に失敗しました。もう一度お試しください。")
+                        st.error("AIの応答解析に失敗しました。")
 
                 except Exception as e:
                     st.error(f"エラーが発生しました: {e}")
 
 elif not api_key:
-    st.info("👈 左のメニューからAPIキーを設定すると開始できます")
+    # ログインは完了しているが、APIキーがまだの場合
+    st.info("👈 左のメニューから、あなたのAPIキーを設定してください")
