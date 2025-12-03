@@ -139,7 +139,7 @@ if uploaded_file and api_key:
 
                     【出力形式】
                     以下のJSON形式のリストのみを出力してください（Markdownコードブロック不要）。
-                    座標（box_2d）は画像全体を1000x1000とした [ymin, xmin, ymax, xmax] です。
+                    座標（box_2d）は、画像の縦横比を維持したまま、上下左右の端を0〜1000のスケールで正規化した値 [ymin, xmin, ymax, xmax] で返してください。
                     
                     [
                         {{
@@ -213,4 +213,3 @@ if uploaded_file and api_key:
 elif not api_key:
     # ログインは完了しているが、APIキーがまだの場合
     st.info("👈 左のメニューから、あなたのAPIキーを設定してください")
-
