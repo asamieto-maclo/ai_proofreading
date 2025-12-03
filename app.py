@@ -9,7 +9,7 @@ import pandas as pd
 st.set_page_config(page_title="【社内用】AI校正＆薬機法チェッカー", layout="wide")
 
 # ■■■ セキュリティ設定 ■■■
-LOGIN_PASSWORD = "secret123"  # 社内共有の合言葉
+LOGIN_PASSWORD = "Ma9logi#1117"  # 社内共有の合言葉
 
 # ■■■ セッション状態の初期化 ■■■
 if "password_correct" not in st.session_state:
@@ -213,3 +213,4 @@ if uploaded_file and api_key:
 elif not api_key:
     # ログインは完了しているが、APIキーがまだの場合
     st.info("👈 左のメニューから、あなたのAPIキーを設定してください")
+
